@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>กินอะไรดี? — Meal Randomizer & Food Journal</title>
+<style>
+:root{
+  --bg:#f7f3ea; --card:#fffdf8; --ink:#1f2321; --muted:#6f746f; --line:#ded8cc;
+  --accent:#1f2321; --soft:#ece7dc; --shadow:0 10px 30px rgba(35,31,24,.08);
+  --thai:#d9772f; --jp:#b9554f; --kr:#4f6f9f; --west:#6f7d56; --good:#5f7c5b;
+  --r:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,sans-serif}
+body{min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{max-width:980px;margin:auto;padding:22px 18px 110px}
+.topbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}
+.brand h1{margin:0;font-size:30px;letter-spacing:-.04em}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.icon-btn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:11px 14px;min-height:44px}
+.page{display:none}.page.active{display:block}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:22px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.hero h2{font-size:34px;line-height:1.05;letter-spacing:-.045em;margin:8px 0 10px}
+.hero .date{color:var(--muted)}
+.section{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin:14px 0}
+.section h3{margin:0 0 12px;font-size:17px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 13px;min-height:44px;color:var(--ink)}
+.chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip[data-cuisine="thai"].active{background:var(--thai);border-color:var(--thai)}
+.chip[data-cuisine="japanese"].active{background:var(--jp);border-color:var(--jp)}
+.chip[data-cuisine="korean"].active{background:var(--kr);border-color:var(--kr)}
+.chip[data-cuisine="western"].active{background:var(--west);border-color:var(--west)}
+.primary{width:100%;border:0;background:var(--ink);color:#fff;border-radius:18px;padding:15px 18px;min-height:54px;font-weight:800}
+.secondary{width:100%;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:16px;padding:13px 16px;min-height:48px;font-weight:700}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.result{display:none;background:var(--card);border:1px solid var(--line);border-radius:28px;padding:22px;box-shadow:var(--shadow);margin-top:16px}
+.result.show{display:block;animation:pop .25s ease}
+@keyframes pop{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}
+.result h2{font-size:34px;margin:5px 0 4px;letter-spacing:-.04em}
+.result .desc{color:var(--muted);font-size:16px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.tag{background:var(--soft);border-radius:999px;padding:7px 10px;font-size:13px}
+.why{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.note{font-size:13px;color:var(--muted);line-height:1.5}
+.bottom-nav{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:12px;width:min(94%,760px);background:rgba(255,253,248,.93);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:22px;display:grid;grid-template-columns:repeat(5,1fr);padding:7px;box-shadow:var(--shadow)}
+.navbtn{border:0;background:transparent;border-radius:16px;padding:10px 4px;color:var(--muted);min-height:56px;font-size:12px}
+.navbtn b{display:block;font-size:19px;margin-bottom:2px}.navbtn.active{background:var(--ink);color:#fff}
+.meal-card,.journal-card,.fav-card{border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0;background:#fff}
+.meal-card .head,.journal-card .head,.fav-card .head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.small{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{border:1px solid var(--line);border-radius:17px;padding:14px;background:#fff}
+.stat strong{display:block;font-size:25px;margin-top:4px}
+.bar{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}.bar>span{display:block;height:100%;background:var(--ink)}
+input,select,textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;color:var(--ink);min-height:46px}
+textarea{min-height:92px;resize:vertical}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.36);z-index:40;padding:18px;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.modalbox{width:min(100%,650px);max-height:88vh;overflow:auto;background:var(--card);border-radius:28px 28px 20px 20px;padding:20px;border:1px solid var(--line)}
+.modalbox h3{margin-top:0}
+.stars{display:flex;gap:8px}.star{font-size:30px;border:0;background:transparent;padding:2px}
+.empty{text-align:center;padding:28px 8px;color:var(--muted)}
+.library-item{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.switchline{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:10px 0}
+.switchline input{width:22px;min-height:auto}
+.kbd{font-size:11px;background:var(--soft);border-radius:6px;padding:2px 6px}
+@media (max-width:640px){
+  .app{padding-left:14px;padding-right:14px}.hero h2,.result h2{font-size:30px}.grid{grid-template-columns:1fr}.row.stack-mobile{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <h1>กินอะไรดี?</h1>
+      <p>Meal Randomizer & Food Journal</p>
+    </div>
+    <button class="icon-btn" id="surpriseTop">🎲 เลือกให้ที</button>
+  </div>
+
+  <main>
+    <section id="randomPage" class="page active">
+      <div class="hero">
+        <div class="eyebrow">Random Meal</div>
+        <h2>มื้อนี้กินอะไรดี?</h2>
+        <div class="date" id="todayLabel"></div>
+      </div>
+
+      <div class="section">
+        <h3>มื้อ</h3>
+        <div class="chips" id="mealChips">
+          <button class="chip" data-meal="breakfast">☀️ เช้า</button>
+          <button class="chip active" data-meal="lunch">🌤 กลางวัน</button>
+          <button class="chip" data-meal="dinner">🌙 เย็น</button>
+          <button class="chip" data-meal="snack">🍪 ของว่าง</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>อยากกินแนวไหน?</h3>
+        <div class="chips" id="cuisineChips">
+          <button class="chip active" data-cuisine="all">🌎 ทั้งหมด</button>
+          <button class="chip" data-cuisine="thai">🇹🇭 ไทย</button>
+          <button class="chip" data-cuisine="japanese">🇯🇵 ญี่ปุ่น</button>
+          <button class="chip" data-cuisine="korean">🇰🇷 เกาหลี</button>
+          <button class="chip" data-cuisine="western">🍝 ฝรั่ง</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>วันนี้ไม่เอาอะไร?</h3>
+        <div class="chips" id="excludeChips">
+          <button class="chip" data-ex="fruit">🍎 ไม่เอาผลไม้</button>
+          <button class="chip" data-ex="vegetable">🥬 ไม่เอาผัก</button>
+          <button class="chip" data-ex="meat">🥩 ไม่เอาเนื้อสัตว์</button>
+          <button class="chip" data-ex="pork">🐷 ไม่เอาหมู</button>
+          <button class="chip" data-ex="beef">🐮 ไม่เอาเนื้อวัว</button>
+          <button class="chip" data-ex="chicken">🐔 ไม่เอาไก่</button>
+          <button class="chip" data-ex="seafood">🐟 ไม่เอาปลา/ซีฟู้ด</button>
+          <button class="chip" data-ex="spicy">🌶 ไม่เอาเผ็ด</button>
+          <button class="chip" data-ex="noodles">🍜 ไม่เอาเส้น</button>
+          <button class="chip" data-ex="rice">🍚 ไม่เอาข้าว</button>
+          <button class="chip" data-ex="dairy">🥛 ไม่เอานม</button>
+          <button class="chip" data-ex="deepfried">🔥 ไม่เอาทอดหนัก</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Healthy Mode</h3>
+        <div class="chips" id="healthChips">
+          <button class="chip active" data-health="normal">😋 ปกติ</button>
+          <button class="chip" data-health="healthy">🌿 Healthy</button>
+          <button class="chip" data-health="protein">💪 High Protein</button>
+          <button class="chip" data-health="light">🥗 Light</button>
+          <button class="chip" data-health="balanced">⚖️ Balanced</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>วันนี้หิวแค่ไหน?</h3>
+        <div class="chips" id="hungerChips">
+          <button class="chip" data-hunger="light">🙂 เบา ๆ</button>
+          <button class="chip active" data-hunger="normal">😋 ปกติ</button>
+          <button class="chip" data-hunger="hungry">🤤 หิวมาก</button>
+        </div>
+      </div>
+
+      <button class="primary" id="randomBtn">🎲 สุ่มเมนู</button>
+      <div class="row" style="margin-top:10px">
+        <button class="secondary" id="planDayBtn">🗓 Plan My Day</button>
+        <button class="secondary" id="surpriseBtn">✨ ไม่รู้เลย เลือกให้ที</button>
+      </div>
+
+      <div class="result" id="resultCard">
+        <div class="eyebrow" id="resultCuisine"></div>
+        <h2 id="resultName"></h2>
+        <div class="desc" id="resultDesc"></div>
+        <div class="meta" id="resultTags"></div>
+        <div class="why" id="resultWhy"></div>
+        <div class="row stack-mobile" style="margin-top:16px">
+          <button class="secondary" id="rerollBtn">🎲 สุ่มใหม่</button>
+          <button class="secondary" id="favoriteBtn">♡ Favorite</button>
+          <button class="secondary" id="healthySwapBtn">🌿 Make It Healthier</button>
+        </div>
+        <button class="primary" style="margin-top:10px" id="eatBtn">✓ กินเมนูนี้</button>
+      </div>
+    </section>
+
+    <section id="todayPage" class="page">
+      <div class="hero"><div class="eyebrow">Today</div><h2>วันนี้กินอะไรไปบ้าง</h2><div class="date" id="todayPageDate"></div></div>
+      <div id="todayMeals"></div>
+      <div class="section">
+        <h3>Today Balance</h3>
+        <div class="grid" id="todayBalance"></div>
+      </div>
+    </section>
+
+    <section id="journalPage" class="page">
+      <div class="hero"><div class="eyebrow">Journal</div><h2>Food Journal</h2><div class="date">บันทึกมื้อที่กินจริง และย้อนดูความชอบของตัวเอง</div></div>
+      <div class="section">
+        <div class="row stack-mobile">
+          <input id="journalSearch" placeholder="Search meals…" aria-label="Search meals">
+          <select id="journalCuisine">
+            <option value="all">All cuisines</option><option value="thai">Thai</option><option value="japanese">Japanese</option><option value="korean">Korean</option><option value="western">Western</option>
+          </select>
+        </div>
+      </div>
+      <div id="journalList"></div>
+      <div class="section">
+        <h3>Your Eating Insights</h3>
+        <div class="grid" id="insightsGrid"></div>
+        <div id="cuisineBars" style="margin-top:16px"></div>
+      </div>
+    </section>
+
+    <section id="favoritesPage" class="page">
+      <div class="hero"><div class="eyebrow">Favorites</div><h2>เมนูโปรด</h2><div class="date">สุ่มเฉพาะของที่ชอบได้ด้วย</div></div>
+      <button class="primary" id="randomFavBtn">🎲 Random from Favorites</button>
+      <div id="favoritesList" style="margin-top:14px"></div>
+    </section>
+
+    <section id="settingsPage" class="page">
+      <div class="hero"><div class="eyebrow">Settings</div><h2>Menu Library & Preferences</h2></div>
+
+      <div class="section">
+        <h3>My Food Goal</h3>
+        <select id="goalSelect">
+          <option value="none">😌 No Goal</option>
+          <option value="balanced">⚖️ Eat More Balanced</option>
+          <option value="protein">💪 More Protein</option>
+          <option value="lighter">🌿 Eat Lighter</option>
+          <option value="lessfried">🔥 Less Fried Food</option>
+          <option value="lesssugar">🍬 Less Sugar</option>
+          <option value="lesssalty">🧂 Less Salty</option>
+        </select>
+        <div class="switchline"><span>Avoid recently eaten food</span><input type="checkbox" id="avoidRecent" checked></div>
+        <div class="switchline"><span>Prioritize favorites</span><input type="checkbox" id="prioFav" checked></div>
+      </div>
+
+      <div class="section">
+        <h3>เพิ่มเมนูเอง</h3>
+        <input id="customName" placeholder="ชื่อเมนู">
+        <div class="row">
+          <select id="customCuisine"><option value="thai">Thai</option><option value="japanese">Japanese</option><option value="korean">Korean</option><option value="western">Western</option></select>
+          <select id="customMeal"><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option><option value="snack">Snack</option></select>
+        </div>
+        <input id="customTags" placeholder="tags คั่นด้วย comma เช่น rice,chicken,quick">
+        <button class="secondary" id="addCustomBtn" style="margin-top:10px">+ Add Custom Menu</button>
+      </div>
+
+      <div class="section">
+        <h3>Menu Library</h3>
+        <input id="librarySearch" placeholder="ค้นหาเมนู…">
+        <div id="libraryList"></div>
+      </div>
+
+      <div class="section">
+        <h3>Data</h3>
+        <div class="row stack-mobile">
+          <button class="secondary" id="exportBtn">Export JSON</button>
+          <label class="secondary" style="text-align:center;margin:0;display:flex;align-items:center;justify-content:center">Import JSON<input id="importInput" type="file" accept="application/json" hidden></label>
+          <button class="secondary" id="resetBtn">Reset All Data</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="bottom-nav">
+  <button class="navbtn active" data-page="randomPage"><b>🎲</b>Random</button>
+  <button class="navbtn" data-page="todayPage"><b>🍽</b>Today</button>
+  <button class="navbtn" data-page="journalPage"><b>📖</b>Journal</button>
+  <button class="navbtn" data-page="favoritesPage"><b>❤️</b>Favorites</button>
+  <button class="navbtn" data-page="settingsPage"><b>⚙️</b>Settings</button>
+</nav>
+
+<div class="modal" id="journalModal">
+  <div class="modalbox">
+    <h3>Add to Journal</h3>
+    <label>Menu</label><input id="jmMenu" readonly>
+    <div class="row"><div><label>Date</label><input id="jmDate" type="date"></div><div><label>Time</label><input id="jmTime" type="time"></div></div>
+    <label>Meal</label><select id="jmMeal"><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option><option value="snack">Snack</option></select>
+    <label>Rating</label><div class="stars" id="stars"></div>
+    <label>Mood หลังจากกิน</label>
+    <select id="jmMood"><option>😋 ดีมาก</option><option>🙂 ดี</option><option>😐 เฉย ๆ</option><option>😕 ไม่ค่อยชอบ</option><option>🤢 ไม่เอาอีก</option></select>
+    <label>อิ่มแค่ไหน?</label><select id="jmFullness"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+    <label>Notes</label><textarea id="jmNotes" placeholder="เช่น ร้านนี้กะเพราดีมาก เผ็ดกำลังดี"></textarea>
+    <div class="row"><button class="secondary" id="cancelJournal">Cancel</button><button class="primary" id="saveJournal">Save Journal</button></div>
+  </div>
+</div>
+
+<div class="modal" id="dayPlanModal">
+  <div class="modalbox">
+    <h3>Plan My Day</h3>
+    <div id="dayPlanContent"></div>
+    <div class="row"><button class="secondary" id="closeDayPlan">Close</button><button class="primary" id="saveDayPlan">Save Day Plan</button></div>
+  </div>
+</div>
+
+<script>
+const BASE_MEALS = [];
+const C = {thai:"🇹🇭 Thai",japanese:"🇯🇵 Japanese",korean:"🇰🇷 Korean",western:"🍝 Western"};
+const seed = [
+["thai","ข้าวกะเพราไก่","ข้าวกะเพราไก่หอม ๆ กินง่ายและอิ่ม","lunch,dinner","rice,chicken,meat,spicy,stirfried","72","high","medium","medium","stir-fried","balanced,high-protein"],
+["thai","ข้าวกะเพราหมู","กะเพราหมูรสจัดกับข้าวสวย","lunch,dinner","rice,pork,meat,spicy,stirfried","68","medium","medium","medium","stir-fried","balanced"],
+["thai","ข้าวไข่เจียว","เรียบง่าย เร็ว และ comfort","breakfast,lunch,dinner","rice,egg,fried,vegetarian","58","medium","medium","high","fried","comfort"],
+["thai","ข้าวมันไก่","ข้าวมันไก่แบบคลาสสิก","lunch,dinner","rice,chicken,meat","64","high","high","medium","boiled","comfort,high-protein"],
+["thai","โจ๊กหมูไม่ติดมัน","เบา ท้องสบาย เหมาะเช้า","breakfast,dinner","rice,pork,meat,light","81","high","medium","low","boiled","healthy,light,high-protein"],
+["thai","ข้าวอกไก่ย่าง","โปรตีนสูงและไม่ทอด","lunch,dinner","rice,chicken,meat","90","high","medium","low","grilled","healthy,balanced,high-protein"],
+["thai","สุกี้น้ำ","ซุปร้อน เบา ปรับเนื้อสัตว์ได้","lunch,dinner","noodles,vegetable,light","84","medium","medium","low","boiled","healthy,light,balanced"],
+["thai","ต้มจืดเต้าหู้ไข่","ซุปเบา โปรตีนกำลังดี","lunch,dinner","vegetable,egg,tofu,vegetarian,light","89","high","low","low","boiled","healthy,light,balanced"],
+["thai","ข้าวปลาเผา","ปลาเผากับข้าว อิ่มแต่ไม่หนัก","lunch,dinner","rice,seafood,fish","88","high","medium","low","grilled","healthy,high-protein,balanced"],
+["thai","ผัดซีอิ๊ว","เส้นผัดรสกลมกล่อม","lunch,dinner","noodles,meat,vegetable,stirfried","55","medium","high","medium","stir-fried","comfort"],
+["thai","ก๋วยเตี๋ยวต้มยำ","เส้นรสจัด ซดคล่อง","lunch,dinner","noodles,meat,spicy,vegetable","61","medium","medium","medium","boiled","spicy"],
+["thai","ข้าวหมูกรอบ","กรอบ มัน อิ่มสะใจ","lunch,dinner","rice,pork,meat,deepfried","39","medium","high","high","deep-fried","comfort"],
+["thai","ข้าวคลุกกะปิ","รสซับซ้อน มีเครื่องหลายอย่าง","lunch","rice,pork,meat,vegetable","62","medium","high","medium","stir-fried","balanced"],
+["thai","ข้าวไข่ข้น","นุ่ม creamy กินง่าย","breakfast,lunch,dinner","rice,egg,dairy,vegetarian","66","medium","medium","medium","stir-fried","comfort"],
+["thai","แกงเขียวหวานไก่","แกงกะทิหอม เข้มข้น","lunch,dinner","rice,chicken,meat,dairy,spicy","52","high","high","high","boiled","comfort"],
+["thai","พะแนงหมู","แกงข้นหอมเครื่องเทศ","lunch,dinner","rice,pork,meat,dairy,spicy","50","high","high","high","boiled","comfort"],
+["thai","ข้าวต้มปลา","เบา โปรตีนดี กินง่าย","breakfast,dinner","rice,fish,seafood,light","88","high","medium","low","boiled","healthy,light,high-protein"],
+["thai","ไข่ต้ม + ข้าว + ไก่ย่าง","เรียบง่าย เน้นโปรตีน","breakfast,lunch,dinner","rice,egg,chicken,meat","92","high","medium","low","grilled","healthy,high-protein,balanced"],
+
+["japanese","Oyakodon","ข้าวหน้าไก่และไข่ รสนุ่ม","lunch,dinner","rice,chicken,egg,meat","78","high","medium","medium","boiled","balanced,high-protein"],
+["japanese","Gyudon","ข้าวหน้าเนื้อหวานเค็มแบบญี่ปุ่น","lunch,dinner","rice,beef,meat","67","high","high","medium","boiled","comfort,high-protein"],
+["japanese","Katsudon","หมูทอดราดไข่บนข้าว","lunch,dinner","rice,pork,meat,egg,deepfried","45","high","high","high","deep-fried","comfort"],
+["japanese","Tonkatsu Curry","แกงกะหรี่ญี่ปุ่นกับหมูทอด","lunch,dinner","rice,pork,meat,deepfried","42","medium","high","high","deep-fried","comfort"],
+["japanese","Japanese Curry Chicken","แกงกะหรี่กับไก่แบบไม่ทอด","lunch,dinner","rice,chicken,meat","69","high","high","medium","boiled","comfort"],
+["japanese","Grilled Salmon Rice","แซลมอนย่างกับข้าวญี่ปุ่น","lunch,dinner","rice,fish,seafood","92","high","medium","low","grilled","healthy,high-protein,balanced"],
+["japanese","Soba","เส้นโซบะเบา ๆ","lunch,dinner","noodles,light,vegetarian","86","medium","medium","low","boiled","healthy,light"],
+["japanese","Ochazuke","ข้าวราดชา/น้ำซุป กินเบา","breakfast,dinner","rice,light","88","low","medium","low","boiled","healthy,light"],
+["japanese","Tamago Kake Gohan","ข้าวกับไข่แบบเรียบง่าย","breakfast","rice,egg,vegetarian","77","medium","medium","low","raw","balanced"],
+["japanese","Sashimi + Rice","โปรตีนสูง ไขมันไม่หนัก","lunch,dinner","rice,fish,seafood","93","high","medium","low","raw","healthy,high-protein,balanced"],
+["japanese","Udon","อุด้งในน้ำซุปอุ่น ๆ","lunch,dinner","noodles,light","74","medium","high","low","boiled","light"],
+["japanese","Ramen","ราเมงซุปเข้มข้น","lunch,dinner","noodles,meat","48","medium","high","high","boiled","comfort"],
+["japanese","Karaage","ไก่ทอดญี่ปุ่น","lunch,dinner,snack","chicken,meat,deepfried","41","high","medium","high","deep-fried","comfort,high-protein"],
+["japanese","Onigiri","ข้าวปั้นกินง่าย","breakfast,snack","rice","72","low","medium","low","raw","quick"],
+["japanese","Tofu Don","ข้าวหน้าเต้าหู้ โปรตีนจากพืช","lunch,dinner","rice,tofu,vegetarian","88","high","medium","low","stir-fried","healthy,balanced,high-protein"],
+["japanese","Chicken Teriyaki Bowl","ไก่ย่างซอสเทอริยากิกับข้าว","lunch,dinner","rice,chicken,meat","84","high","medium","medium","grilled","healthy,high-protein,balanced"],
+
+["korean","Bibimbap","ข้าวคลุกเกาหลี มีความหลากหลาย","lunch,dinner","rice,vegetable,meat","80","high","medium","medium","stir-fried","balanced,healthy"],
+["korean","Bulgogi Rice Bowl","เนื้อหมักย่างกับข้าว","lunch,dinner","rice,beef,meat","78","high","medium","medium","grilled","high-protein,balanced"],
+["korean","Samgyeopsal","หมูสามชั้นย่าง","lunch,dinner","pork,meat,vegetable","46","high","low","high","grilled","comfort"],
+["korean","Kimchi Jjigae","ซุปกิมจิรสจัด","lunch,dinner","pork,meat,vegetable,spicy","69","medium","low","medium","boiled","spicy"],
+["korean","Sundubu Jjigae","ซุปเต้าหู้อ่อนร้อน ๆ","lunch,dinner","tofu,egg,vegetable,spicy","86","high","low","low","boiled","healthy,high-protein,light"],
+["korean","Japchae","วุ้นเส้นผัดเกาหลี","lunch,dinner","noodles,vegetable,meat","64","medium","high","medium","stir-fried","balanced"],
+["korean","Tteokbokki","ต๊อกซอสเผ็ดหวาน","snack,lunch","spicy","44","low","high","medium","boiled","comfort"],
+["korean","Kimbap","ข้าวห่อสาหร่าย กินง่าย","breakfast,lunch,snack","rice,vegetable","73","medium","medium","low","raw","quick,balanced"],
+["korean","Korean Fried Chicken","ไก่ทอดซอสเกาหลี","lunch,dinner","chicken,meat,deepfried,spicy","35","high","medium","high","deep-fried","comfort"],
+["korean","Kimchi Fried Rice","ข้าวผัดกิมจิ","lunch,dinner","rice,vegetable,spicy","58","medium","high","medium","stir-fried","comfort"],
+["korean","Grilled Chicken Bowl","ไก่ย่างเกาหลีบนข้าว","lunch,dinner","rice,chicken,meat","90","high","medium","low","grilled","healthy,high-protein,balanced"],
+["korean","Korean Egg Rice","ข้าวกับไข่และสาหร่าย","breakfast,lunch","rice,egg,vegetarian","82","medium","medium","low","stir-fried","healthy,balanced"],
+["korean","Grilled Beef Bowl","เนื้อย่างไม่ทอดกับข้าว","lunch,dinner","rice,beef,meat","85","high","medium","medium","grilled","healthy,high-protein"],
+
+["western","Pasta Carbonara","พาสต้าครีมไข่ชีส","lunch,dinner","noodles,pork,dairy,meat","43","medium","high","high","boiled","comfort"],
+["western","Aglio e Olio","พาสต้าน้ำมันมะกอก กระเทียม","lunch,dinner","noodles,vegetarian","68","low","high","medium","boiled","comfort"],
+["western","Bolognese","พาสต้าซอสเนื้อ","lunch,dinner","noodles,beef,meat,vegetable","62","high","high","medium","boiled","comfort"],
+["western","Burger","เบอร์เกอร์คลาสสิก","lunch,dinner","beef,meat,dairy","40","high","high","high","grilled","comfort"],
+["western","Grilled Chicken","อกไก่ย่างแบบเรียบง่าย","lunch,dinner","chicken,meat","94","high","low","low","grilled","healthy,high-protein,light"],
+["western","Steak","สเต๊กเนื้อ โปรตีนสูง","lunch,dinner","beef,meat","73","high","low","medium","grilled","high-protein"],
+["western","Fish & Chips","ปลาทอดกับมันฝรั่ง","lunch,dinner","fish,seafood,deepfried","38","medium","high","high","deep-fried","comfort"],
+["western","Omelette","ไข่เจียวสไตล์ตะวันตก","breakfast,lunch","egg,dairy,vegetarian","75","high","low","medium","stir-fried","high-protein"],
+["western","Scrambled Egg Toast","ไข่คนกับขนมปัง","breakfast","egg,dairy,vegetarian","79","high","medium","medium","stir-fried","balanced,high-protein"],
+["western","French Toast","ขนมปังชุบไข่","breakfast,snack","egg,dairy,vegetarian,sugar","50","medium","high","medium","fried","comfort"],
+["western","Mac & Cheese","พาสต้าชีสเข้มข้น","lunch,dinner","noodles,dairy,vegetarian","37","medium","high","high","boiled","comfort"],
+["western","Roast Chicken","ไก่อบ โปรตีนสูงและอิ่มนาน","lunch,dinner","chicken,meat","91","high","low","low","baked","healthy,high-protein"],
+["western","Tuna Sandwich","แซนด์วิชทูน่า กินง่าย","breakfast,lunch","fish,seafood","83","high","medium","low","raw","healthy,high-protein,quick"],
+["western","Greek Yogurt Bowl","โยเกิร์ตโปรตีนดี เหมาะมื้อเบา","breakfast,snack","dairy,fruit,vegetarian,light","88","high","medium","low","raw","healthy,light,high-protein"],
+["western","Chicken Wrap","แรปไก่กินง่าย","lunch,dinner","chicken,meat,vegetable","82","high","medium","low","grilled","healthy,balanced,high-protein"],
+["western","Roast Vegetable & Egg Bowl","ผักอบกับไข่ อิ่มเบา","lunch,dinner","vegetable,egg,vegetarian","91","high","medium","low","baked","healthy,balanced,light"]
+];
+
+function expandSeed(){
+  let id=1;
+  seed.forEach(r=>{
+    BASE_MEALS.push({
+      id:"b"+(id++), cuisine:r[0], name:r[1], desc:r[2], meal:r[3].split(","), tags:r[4].split(","),
+      healthScore:+r[5], proteinLevel:r[6], carbLevel:r[7], fatLevel:r[8], cookingMethod:r[9],
+      healthyTags:r[10].split(","), custom:false
+    });
+  });
+  const fillers = {
+    thai:["ข้าวหมูกระเทียม","ข้าวไก่กระเทียม","ราดหน้า","ก๋วยเตี๋ยวเรือ","ข้าวผัดไก่","ข้าวหน้าไก่","ข้าวหมูแดง","ไข่พะโล้ราดข้าว","ข้าวต้มหมู","ต้มยำไก่","แกงจืดไข่น้ำ","ข้าวไก่อบ","หมูย่างจิ้มแจ่ว","ข้าวคอหมูย่าง","ข้าวผัดไข่","ขนมปังไข่","ปอเปี๊ยะสด","เต้าหู้ทรงเครื่อง"],
+    japanese:["Tendon","Sushi","Omurice","Yakisoba","Hamburg Steak","Chazuke Salmon","Tamago Sando","Yakitori","Nikujaga","Miso Soup + Rice","Grilled Mackerel Rice","Chicken Soboro Don","Inari Sushi","Cold Soba","Yudofu","Egg Sandwich"],
+    korean:["Ramyeon","Jajangmyeon","Dakgalbi","Bossam","Doenjang Jjigae","Gyeran Mari","Gyeran Bap","Dakjuk","Naengmyeon","Korean Toast","Mandu Soup","Tofu Bibimbap","Chicken Porridge","Seaweed Soup Rice","Hotteok"],
+    western:["Lasagna","Pizza Margherita","Caesar Salad","Sandwich","Croissant","Pancake","Tomato Soup","Chicken Soup","Roast Beef Sandwich","Egg Salad Sandwich","Baked Potato","Tuna Pasta","Chicken Pasta","Mushroom Omelette","Grilled Fish","Baked Salmon","Turkey Sandwich","Tomato Pasta"]
+  };
+  Object.entries(fillers).forEach(([c,arr])=>arr.forEach((name,i)=>{
+    const vegWords=["Margherita","Tomato","Mushroom","Yudofu","Tofu","Gyeran","Egg","Hotteok","Pancake","Croissant"];
+    const fishWords=["Fish","Salmon","Mackerel","Tuna","Sushi"];
+    const chickenWords=["Chicken","Dak","ไก่"];
+    const porkWords=["หมู","Bossam"];
+    const tags=["quick"];
+    if(name.includes("ข้าว")||name.includes("Rice")||name.includes("Bap")||name.includes("Sushi")) tags.push("rice");
+    if(name.includes("Pasta")||name.includes("Soba")||name.includes("Noodle")||name.includes("Ramyeon")||name.includes("Yakisoba")||name.includes("Naengmyeon")||name.includes("ราดหน้า")||name.includes("ก๋วยเตี๋ยว")) tags.push("noodles");
+    if(chickenWords.some(x=>name.includes(x))) tags.push("chicken","meat");
+    if(porkWords.some(x=>name.includes(x))) tags.push("pork","meat");
+    if(fishWords.some(x=>name.includes(x))) tags.push("fish","seafood");
+    if(vegWords.some(x=>name.includes(x))) tags.push("vegetarian");
+    const hs = 60 + ((i*7)%31);
+    BASE_MEALS.push({id:"b"+(id++),cuisine:c,name,desc:"เมนู"+C[c].replace(/^.. /,"")+"ที่สุ่มไว้สำหรับเพิ่มความหลากหลาย",meal:i%4===0?["breakfast","lunch"]:["lunch","dinner"],tags,healthScore:hs,proteinLevel:tags.includes("meat")||tags.includes("fish")?"high":"medium",carbLevel:"medium",fatLevel:hs>78?"low":"medium",cookingMethod:hs>80?"grilled":"stir-fried",healthyTags:hs>78?["healthy","balanced"]:["balanced"],custom:false});
+  }));
+}
+expandSeed();
+
+const KEY="meal_randomizer_v1";
+const defaultState={journal:[],favorites:[],disliked:{},customMeals:[],randomHistory:[],settings:{goal:"none",avoidRecent:true,prioFav:true}};
+let state=load();
+let currentMeal=null, currentRating=4, dayPlan=[];
+
+function load(){try{return {...defaultState,...JSON.parse(localStorage.getItem(KEY)||"{}"),settings:{...defaultState.settings,...(JSON.parse(localStorage.getItem(KEY)||"{}").settings)}}catch(e){return structuredClone(defaultState)}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function allMeals(){return [...BASE_MEALS,...state.customMeals]}
+function $$(q){return [...document.querySelectorAll(q)]}
+function $(q){return document.querySelector(q)}
+function dateISO(d=new Date()){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function formatDate(s){return new Date(s+"T12:00:00").toLocaleDateString("th-TH",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
+function cuisineLabel(c){return C[c]||c}
+function activeOne(group,attr){return document.querySelector(`#${group} .chip.active`)?.dataset[attr]}
+function activeMany(group,attr){return $$(`#${group} .chip.active`).map(x=>x.dataset[attr])}
+function escapeHtml(s=""){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+
+function setupChipGroup(id, multi=false){
+  $("#"+id).addEventListener("click",e=>{
+    const b=e.target.closest(".chip"); if(!b)return;
+    if(multi){b.classList.toggle("active");return}
+    $$("#"+id+" .chip").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+  });
+}
+setupChipGroup("mealChips"); setupChipGroup("healthChips"); setupChipGroup("hungerChips"); setupChipGroup("excludeChips",true);
+$("#cuisineChips").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  if(b.dataset.cuisine==="all"){
+    $$("#cuisineChips .chip").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+  }else{
+    $("#cuisineChips [data-cuisine=all]").classList.remove("active"); b.classList.toggle("active");
+    if(!activeMany("cuisineChips","cuisine").length) $("#cuisineChips [data-cuisine=all]").classList.add("active");
+  }
+});
+
+function getFilteredMeals(opts={}){
+  const meal=opts.meal||activeOne("mealChips","meal");
+  let cuisines=opts.cuisines||activeMany("cuisineChips","cuisine");
+  if(cuisines.includes("all")) cuisines=["thai","japanese","korean","western"];
+  const ex=opts.exclusions||activeMany("excludeChips","ex");
+  return allMeals().filter(m=>{
+    if(!m.meal.includes(meal) || !cuisines.includes(m.cuisine)) return false;
+    if(ex.includes("fruit") && m.tags.includes("fruit")) return false;
+    if(ex.includes("vegetable") && m.tags.includes("vegetable")) return false;
+    if(ex.includes("meat") && m.tags.includes("meat")) return false;
+    if(ex.includes("pork") && m.tags.includes("pork")) return false;
+    if(ex.includes("beef") && m.tags.includes("beef")) return false;
+    if(ex.includes("chicken") && m.tags.includes("chicken")) return false;
+    if(ex.includes("seafood") && (m.tags.includes("seafood")||m.tags.includes("fish"))) return false;
+    if(ex.includes("spicy") && m.tags.includes("spicy")) return false;
+    if(ex.includes("noodles") && m.tags.includes("noodles")) return false;
+    if(ex.includes("rice") && m.tags.includes("rice")) return false;
+    if(ex.includes("dairy") && m.tags.includes("dairy")) return false;
+    if(ex.includes("deepfried") && m.cookingMethod==="deep-fried") return false;
+    return true;
+  });
+}
+function weightFor(m, health, hunger){
+  let w=1;
+  if(state.settings.prioFav && state.favorites.includes(m.id)) w*=1.25;
+  if(state.disliked[m.id]==="lower") w*=.35;
+  if(state.disliked[m.id]==="never") return 0;
+  if(state.settings.avoidRecent){
+    const cutoff=Date.now()-3*864e5;
+    const recent=state.journal.some(j=>j.mealId===m.id && new Date(j.date).getTime()>cutoff);
+    if(recent) w*=.25;
+  }
+  if(health==="healthy"){if(m.healthScore>=70)w*=1.6;if(m.healthScore>=85)w*=1.25;if(m.cookingMethod==="deep-fried")w*=.4}
+  if(health==="protein" && m.proteinLevel==="high") w*=1.7;
+  if(health==="light"){if(m.healthScore>=75)w*=1.35;if(m.fatLevel==="low")w*=1.4;if(m.cookingMethod==="deep-fried")w*=.25}
+  if(health==="balanced" && m.healthyTags.includes("balanced")) w*=1.6;
+  if(hunger==="light" && (m.healthyTags.includes("light")||m.fatLevel==="low"))w*=1.4;
+  if(hunger==="hungry" && (m.tags.includes("rice")||m.tags.includes("noodles")) && m.proteinLevel==="high")w*=1.4;
+  const g=state.settings.goal;
+  if(g==="protein"&&m.proteinLevel==="high")w*=1.5;
+  if(g==="balanced"&&m.healthyTags.includes("balanced"))w*=1.45;
+  if(g==="lighter"&&m.healthScore>=70)w*=1.4;
+  if(g==="lessfried"&&m.cookingMethod==="deep-fried")w*=.2;
+  if(g==="lesssugar"&&m.tags.includes("sugar"))w*=.35;
+  return w;
+}
+function weightedRandom(arr, health="normal", hunger="normal"){
+  if(!arr.length)return null;
+  const last=state.randomHistory.at(-1);
+  const pool=arr.length>1?arr.filter(m=>m.id!==last):arr;
+  const weights=pool.map(m=>weightFor(m,health,hunger));
+  const total=weights.reduce((a,b)=>a+b,0); if(total<=0)return pool[0]||null;
+  let r=Math.random()*total;
+  for(let i=0;i<pool.length;i++){r-=weights[i];if(r<=0)return pool[i]}
+  return pool.at(-1);
+}
+function getRandomMeal(opts={}){
+  const health=opts.health||activeOne("healthChips","health")||"normal";
+  const hunger=opts.hunger||activeOne("hungerChips","hunger")||"normal";
+  const arr=getFilteredMeals(opts);
+  const m=weightedRandom(arr,health,hunger);
+  if(m){state.randomHistory.push(m.id);state.randomHistory=state.randomHistory.slice(-30);save()}
+  return m;
+}
+function showResult(m){
+  currentMeal=m;
+  if(!m){$("#resultCard").classList.add("show");$("#resultCuisine").textContent="ไม่พบเมนู";$("#resultName").textContent="ไม่มีเมนูที่ตรงกับเงื่อนไข";$("#resultDesc").textContent="ลองลดตัวกรองบางอย่าง แล้วสุ่มใหม่";$("#resultTags").innerHTML="";$("#resultWhy").innerHTML="";return}
+  $("#resultCard").classList.add("show");
+  $("#resultCuisine").textContent=cuisineLabel(m.cuisine);
+  $("#resultName").textContent=m.name; $("#resultDesc").textContent=m.desc;
+  const tags=[`🌿 Health ${m.healthScore}`,`💪 Protein ${m.proteinLevel}`,`🔥 ${m.cookingMethod}`,...m.healthyTags.slice(0,2)];
+  $("#resultTags").innerHTML=tags.map(t=>`<span class="tag">${t}</span>`).join("");
+  const why=[]; if(m.healthScore>=85)why.push("🌿 Very Healthy"); if(m.proteinLevel==="high")why.push("💪 High Protein"); if(m.healthyTags.includes("balanced"))why.push("⚖️ Balanced"); if(m.cookingMethod!=="deep-fried")why.push("🔥 Not Deep Fried");
+  $("#resultWhy").innerHTML=`<strong>Why this fits</strong><div class="meta">${why.map(x=>`<span class="tag">${x}</span>`).join("")}</div>`;
+  $("#favoriteBtn").textContent=state.favorites.includes(m.id)?"♥ Favorited":"♡ Favorite";
+}
+function randomNow(){showResult(getRandomMeal())}
+$("#randomBtn").onclick=randomNow; $("#rerollBtn").onclick=randomNow;
+
+function surprise(){
+  const meals=["breakfast","lunch","dinner"];
+  const meal=meals[Math.floor(Math.random()*meals.length)];
+  $$("#mealChips .chip").forEach(x=>x.classList.toggle("active",x.dataset.meal===meal));
+  $$("#cuisineChips .chip").forEach(x=>x.classList.toggle("active",x.dataset.cuisine==="all"));
+  showResult(getRandomMeal({meal,cuisines:["thai","japanese","korean","western"]}));
+}
+$("#surpriseBtn").onclick=surprise; $("#surpriseTop").onclick=surprise;
+
+$("#favoriteBtn").onclick=()=>{
+  if(!currentMeal)return;
+  const i=state.favorites.indexOf(currentMeal.id); if(i>=0)state.favorites.splice(i,1);else state.favorites.push(currentMeal.id);
+  save(); showResult(currentMeal); renderFavorites();
+};
+
+function healthierSwap(){
+  if(!currentMeal)return;
+  let candidates=allMeals().filter(m=>m.cuisine===currentMeal.cuisine && m.healthScore>currentMeal.healthScore+8 && m.meal.some(x=>currentMeal.meal.includes(x)));
+  if(!candidates.length)candidates=allMeals().filter(m=>m.healthScore>=85 && m.proteinLevel==="high");
+  const m=weightedRandom(candidates,"healthy","normal"); if(m)showResult(m);
+}
+$("#healthySwapBtn").onclick=healthierSwap;
+
+function openJournal(m=currentMeal, mealOverride=null){
+  if(!m)return;
+  currentMeal=m; currentRating=4;
+  $("#jmMenu").value=m.name; $("#jmDate").value=dateISO(); $("#jmTime").value=new Date().toTimeString().slice(0,5);
+  $("#jmMeal").value=mealOverride||activeOne("mealChips","meal")||m.meal[0]; $("#jmNotes").value="";
+  renderStars(); $("#journalModal").classList.add("show");
+}
+$("#eatBtn").onclick=()=>openJournal();
+$("#cancelJournal").onclick=()=>$("#journalModal").classList.remove("show");
+function renderStars(){
+  $("#stars").innerHTML=[1,2,3,4,5].map(n=>`<button class="star" data-star="${n}">${n<=currentRating?"★":"☆"}</button>`).join("");
+}
+$("#stars").onclick=e=>{const b=e.target.closest("[data-star]");if(b){currentRating=+b.dataset.star;renderStars()}};
+$("#saveJournal").onclick=()=>{
+  if(!currentMeal)return;
+  const entry={id:"j"+Date.now(),mealId:currentMeal.id,name:currentMeal.name,cuisine:currentMeal.cuisine,date:$("#jmDate").value,time:$("#jmTime").value,meal:$("#jmMeal").value,rating:currentRating,mood:$("#jmMood").value,fullness:+$("#jmFullness").value,notes:$("#jmNotes").value,healthScore:currentMeal.healthScore,proteinLevel:currentMeal.proteinLevel,cookingMethod:currentMeal.cookingMethod};
+  state.journal.push(entry);
+  if(currentRating===1||entry.mood.includes("ไม่เอาอีก"))state.disliked[currentMeal.id]="lower";
+  save(); $("#journalModal").classList.remove("show"); renderAll();
+};
+
+function renderToday(){
+  const d=dateISO(); $("#todayPageDate").textContent=formatDate(d);
+  const meals=[["breakfast","☀️ Breakfast"],["lunch","🌤 Lunch"],["dinner","🌙 Dinner"],["snack","🍪 Snack"]];
+  const entries=state.journal.filter(j=>j.date===d);
+  $("#todayMeals").innerHTML=meals.map(([k,l])=>{
+    const j=entries.find(x=>x.meal===k);
+    return `<div class="meal-card"><div class="head"><div><strong>${l}</strong><div class="small">${j?`${escapeHtml(j.name)} · ${j.time}`:"ยังไม่ได้บันทึก"}</div></div>${j?`<button class="icon-btn" onclick="deleteJournal('${j.id}')">Delete</button>`:`<button class="icon-btn" onclick="randomForMeal('${k}')">Random</button>`}</div></div>`;
+  }).join("");
+  const healthy=entries.filter(x=>x.healthScore>=70).length, fried=entries.filter(x=>x.cookingMethod==="deep-fried").length, protein=entries.filter(x=>x.proteinLevel==="high").length;
+  $("#todayBalance").innerHTML=[
+    ["Meals",`${entries.length} / 4`],["Healthy meals",`${healthy} / ${entries.length||0}`],["High protein",protein],["Deep-fried",fried]
+  ].map(x=>`<div class="stat"><span class="small">${x[0]}</span><strong>${x[1]}</strong></div>`).join("");
+}
+window.randomForMeal=(meal)=>{navigate("randomPage");$$("#mealChips .chip").forEach(x=>x.classList.toggle("active",x.dataset.meal===meal));randomNow()};
+window.deleteJournal=(id)=>{state.journal=state.journal.filter(x=>x.id!==id);save();renderAll()};
+
+function renderJournal(){
+  const q=$("#journalSearch").value.toLowerCase(), c=$("#journalCuisine").value;
+  const arr=[...state.journal].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).filter(j=>(c==="all"||j.cuisine===c)&&j.name.toLowerCase().includes(q));
+  $("#journalList").innerHTML=arr.length?arr.map(j=>`<div class="journal-card"><div class="head"><div><div class="small">${formatDate(j.date)} · ${j.time} · ${j.meal}</div><strong>${escapeHtml(j.name)}</strong><div>${"★".repeat(j.rating)}${"☆".repeat(5-j.rating)}</div>${j.notes?`<div class="note">${escapeHtml(j.notes)}</div>`:""}</div><span class="tag">${cuisineLabel(j.cuisine)}</span></div></div>`).join(""):`<div class="empty">ยังไม่มีบันทึกอาหาร<br><span class="small">มื้ออร่อยครั้งแรกของคุณกำลังรออยู่</span></div>`;
+  renderInsights();
+}
+$("#journalSearch").oninput=renderJournal; $("#journalCuisine").onchange=renderJournal;
+
+function renderInsights(){
+  const arr=state.journal;
+  const avg=arr.length?(arr.reduce((s,x)=>s+x.rating,0)/arr.length).toFixed(1):"—";
+  const hs=arr.length?Math.round(arr.reduce((s,x)=>s+(x.healthScore||0),0)/arr.length):"—";
+  const healthy=arr.filter(x=>x.healthScore>=70).length, protein=arr.filter(x=>x.proteinLevel==="high").length;
+  $("#insightsGrid").innerHTML=[["Meals logged",arr.length],["Avg rating",avg+" ★"],["Healthy meals",healthy],["Avg Health Score",hs],["High-protein meals",protein],["Deep-fried meals",arr.filter(x=>x.cookingMethod==="deep-fried").length]].map(x=>`<div class="stat"><span class="small">${x[0]}</span><strong>${x[1]}</strong></div>`).join("");
+  const counts={thai:0,japanese:0,korean:0,western:0};arr.forEach(x=>counts[x.cuisine]=(counts[x.cuisine]||0)+1);
+  $("#cuisineBars").innerHTML=Object.entries(counts).map(([k,v])=>{const p=arr.length?Math.round(v/arr.length*100):0;return `<div style="margin:10px 0"><div class="small">${cuisineLabel(k)} · ${p}%</div><div class="bar"><span style="width:${p}%"></span></div></div>`}).join("");
+}
+function renderFavorites(){
+  const ms=allMeals().filter(m=>state.favorites.includes(m.id));
+  $("#favoritesList").innerHTML=ms.length?ms.map(m=>`<div class="fav-card"><div class="head"><div><strong>${escapeHtml(m.name)}</strong><div class="small">${cuisineLabel(m.cuisine)} · Health ${m.healthScore}</div></div><button class="icon-btn" onclick="removeFav('${m.id}')">♥</button></div></div>`).join(""):`<div class="empty">ยังไม่มีเมนูโปรด</div>`;
+}
+window.removeFav=id=>{state.favorites=state.favorites.filter(x=>x!==id);save();renderFavorites()};
+$("#randomFavBtn").onclick=()=>{
+  const ms=allMeals().filter(m=>state.favorites.includes(m.id)); if(!ms.length)return alert("ยังไม่มี Favorites");
+  navigate("randomPage"); showResult(weightedRandom(ms,"normal","normal"));
+};
+
+function renderLibrary(){
+  const q=$("#librarySearch").value.toLowerCase();
+  const ms=allMeals().filter(m=>m.name.toLowerCase().includes(q)).slice(0,100);
+  $("#libraryList").innerHTML=ms.map(m=>`<div class="library-item"><div><strong>${escapeHtml(m.name)}</strong><div class="small">${cuisineLabel(m.cuisine)} · Health ${m.healthScore} · ${m.meal.join("/")}</div></div>${m.custom?`<button class="icon-btn" onclick="deleteCustom('${m.id}')">Delete</button>`:""}</div>`).join("");
+}
+$("#librarySearch").oninput=renderLibrary;
+$("#addCustomBtn").onclick=()=>{
+  const name=$("#customName").value.trim(); if(!name)return alert("ใส่ชื่อเมนูก่อน");
+  const tags=$("#customTags").value.split(",").map(x=>x.trim()).filter(Boolean);
+  state.customMeals.push({id:"c"+Date.now(),cuisine:$("#customCuisine").value,name,desc:"Custom menu",meal:[$("#customMeal").value],tags,healthScore:70,proteinLevel:tags.some(x=>["chicken","beef","pork","fish","egg","tofu"].includes(x))?"high":"medium",carbLevel:"medium",fatLevel:"medium",cookingMethod:"stir-fried",healthyTags:["balanced"],custom:true});
+  $("#customName").value="";$("#customTags").value="";save();renderLibrary();
+};
+window.deleteCustom=id=>{state.customMeals=state.customMeals.filter(x=>x.id!==id);state.favorites=state.favorites.filter(x=>x!==id);save();renderLibrary()};
+
+$("#goalSelect").onchange=e=>{state.settings.goal=e.target.value;save()};
+$("#avoidRecent").onchange=e=>{state.settings.avoidRecent=e.target.checked;save()};
+$("#prioFav").onchange=e=>{state.settings.prioFav=e.target.checked;save()};
+
+$("#planDayBtn").onclick=()=>{
+  dayPlan=["breakfast","lunch","dinner"].map(meal=>({meal,item:getRandomMeal({meal,cuisines:["thai","japanese","korean","western"]})}));
+  $("#dayPlanContent").innerHTML=dayPlan.map(x=>`<div class="meal-card"><strong>${x.meal.toUpperCase()}</strong><div>${x.item?escapeHtml(x.item.name):"ไม่มีเมนู"}</div><div class="small">${x.item?cuisineLabel(x.item.cuisine):""}</div></div>`).join("");
+  $("#dayPlanModal").classList.add("show");
+};
+$("#closeDayPlan").onclick=()=>$("#dayPlanModal").classList.remove("show");
+$("#saveDayPlan").onclick=()=>{
+  dayPlan.forEach(x=>{if(x.item)state.journal.push({id:"j"+Date.now()+Math.random(),mealId:x.item.id,name:x.item.name,cuisine:x.item.cuisine,date:dateISO(),time:"",meal:x.meal,rating:0,mood:"Planned",fullness:0,notes:"Planned meal",healthScore:x.item.healthScore,proteinLevel:x.item.proteinLevel,cookingMethod:x.item.cookingMethod})});
+  save();$("#dayPlanModal").classList.remove("show");renderAll();navigate("todayPage");
+};
+
+$("#exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="กินอะไรดี-data.json";a.click();URL.revokeObjectURL(a.href);
+};
+$("#importInput").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());state={...defaultState,...data,settings:{...defaultState.settings,...(data.settings||{})}};save();initSettings();renderAll();alert("Import สำเร็จ")}catch{alert("ไฟล์ JSON ไม่ถูกต้อง")}
+};
+$("#resetBtn").onclick=()=>{if(confirm("ลบ Journal, Favorites, Custom menus และการตั้งค่าทั้งหมด?")){state=structuredClone(defaultState);save();initSettings();renderAll()}};
+
+function navigate(id){
+  $$(".page").forEach(x=>x.classList.toggle("active",x.id===id));
+  $$(".navbtn").forEach(x=>x.classList.toggle("active",x.dataset.page===id));
+  if(id==="todayPage")renderToday(); if(id==="journalPage")renderJournal(); if(id==="favoritesPage")renderFavorites(); if(id==="settingsPage")renderLibrary();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+$$(".navbtn").forEach(b=>b.onclick=()=>navigate(b.dataset.page));
+
+function initSettings(){
+  $("#goalSelect").value=state.settings.goal;$("#avoidRecent").checked=state.settings.avoidRecent;$("#prioFav").checked=state.settings.prioFav;
+}
+function renderAll(){renderToday();renderJournal();renderFavorites();renderLibrary()}
+function init(){
+  const now=new Date();
+  $("#todayLabel").textContent=now.toLocaleDateString("th-TH",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  initSettings();renderAll();
+}
+init();
+</script>
+</body>
+</html>
